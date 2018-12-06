@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "devorame"
+version = "0.1.0"
+description = ""
+authors = ["Roberto López Pérez <roberto.lopez@acm.org>"]
+
+[tool.poetry.scripts]
+devorame = "devorame:devorame"
+
+[tool.poetry.dependencies]
+python = "*"
+click = "^7.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"

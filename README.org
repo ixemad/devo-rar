@@ -1,0 +1,891 @@
+#+TITLE: Programming Challenge
+#+AUTHOR: Roberto López
+#+FILETAGS: PYTHON
+
+* Overview
+
+  This project implements a solution to some coding challenges.
+
+  1. Write an efficient algorithm to check if a string is a [[https://en.wikipedia.org/wiki/Palindrome][palindrome]]. A string is a [[https://en.wikipedia.org/wiki/Palindrome][palindrome]] if
+     the string matches the reverse of string.
+
+     This question is tackled by the [[#command-function-palindrome][palindrome]] command as shown below.
+
+     #+BEGIN_EXAMPLE
+       » poetry run devorame -v palindrome 'Amore, Roma.'
+       Great! That "Amore, Roma." is a palindrome.     
+     #+END_EXAMPLE
+
+  2. Write an efficient algorithm to find /K-complementary pairs/ in a given array of integers.
+     Given Array =A=, pair =(i, j)= is K-complementary if =K = A[i] + A[j]=.
+
+     This question is tackled by the [[#command-function-k-complementary][k-complementary]] command as show below.
+
+     #+BEGIN_EXAMPLE
+       » poetry run devorame k-complementary 6 1 2 3 4 5
+       3,3
+       2,4
+       1,5     
+     #+END_EXAMPLE
+
+  3. [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf][Tf/idf]] (term frequency / inverse document frequency) is an statistic that reflects the
+     importance of a term =T= in a document =D= (or the relevance of a document for a searched term)
+     relative to a document set =S=.
+
+     Tf/idf can be extended to a set of terms TT adding the tf/idf for each term.
+
+     Assume that we have a directory =D= containing a document set =S=, with one file per document.
+     Documents will be added to that directory by external agents, but they will never be removed or
+     overwritten.
+
+     We are given a set of terms =TT=, and asked to compute the tf/idf of =TT= for each document in
+     =D=, and report the =N= top documents sorted by relevance.
+
+     The program must run as a daemon/service that is watching for new documents, and dynamically
+     updates the computed tf/idf for each document and the inferred ranking.
+
+     The program will run with the parameters:
+
+     - The directory =D= where the documents will be written.
+     - The terms =TT= to be analyzed.
+     - The count =N= of top results to show.
+     - The period =P= to report the top =N=.
+
+     For example:
+
+     #+BEGIN_EXAMPLE
+       ./tdIdf -d dir -n 5 -p 300 -t "password try again"       
+       ...
+       doc1.txt        0.78
+       doc73.txt        0.76
+     #+END_EXAMPLE
+
+     Bonus:
+
+     - Parallel solution to accelerate computation.
+     - Extensible  framework  for  tf/idf  variants.
+
+     This question is tackled by the [[#command-function-tf-idf][tf-idf]] command as show below. 
+
+     #+BEGIN_EXAMPLE
+       » poetry run devorame -v tf-idf -d ../devo/documents -p 3 -n 3 -t "python film"                                    1 ↵
+       2018-12-07 13:47:02,405 devorame.tf_idf - [INFO] Document python-colt.txt was processed
+       2018-12-07 13:47:02,406 devorame.tf_idf - [INFO] Document python-def.txt was processed
+       2018-12-07 13:47:02,407 devorame.tf_idf - [INFO] Document python-film.txt was processed
+       Top-3 best documents
+       python-film.txt 0.03052
+       python-colt.txt 0.01852
+       python-def.txt 0.01526
+
+       ^C2018-12-07 13:47:03,336 devorame.tf_idf - [INFO] Finishing TF-IDF server     
+     #+END_EXAMPLE
+
+     Some features are still pending.
+
+     - The command does not run as a daemon/service as using [[https://en.wikipedia.org/wiki/Daemontools][daemontools]], [[https://en.wikipedia.org/wiki/Runit][runit]] or similar is
+       considered a better option.
+
+     - Not extensible framework for tf/idf variants.
+
+* Installation
+
+  This project is managed with [[https://poetry.eustace.io/][Poetry]]. The steps I followed to [[https://poetry.eustace.io/docs/#installation][install]] it were.
+
+  - I choosed the not-so-recommended [[https://poetry.eustace.io/docs/#installing-with-pip][pip alternative]] to install it.
+  
+    #+BEGIN_SRC sh :results output
+      python -m pip install --user poetry
+    #+END_SRC
+  
+    [[https://pip.pypa.io/en/stable/#pip][pip]] was because like that because of a [[https://stackoverflow.com/questions/28210269/importerror-cannot-import-name-main-when-running-pip-version-command-in-windo][pip import error]].
+
+  - After [[https://poetry.eustace.io/][poetry]] was installed with [[https://pip.pypa.io/en/stable/#pip][pip]], let it to update itself.
+  
+    #+BEGIN_SRC sh :results output
+      poetry self:update
+    #+END_SRC
+    #+RESULTS: 
+    : You are using the latest version
+
+  [[https://git-scm.com/docs/git-clone][Clone]] this project repository into your local machine.
+
+  #+BEGIN_SRC sh
+    git clone https://github.com/ixemad/devorame.git
+  #+END_SRC
+
+  Move to the project folder and run [[https://poetry.eustace.io/docs/basic-usage/#installing-dependencies][poetry install]] to resolve all the dependencies. Run [[https://pytest.org/][pytest]] to
+  validate that the application was installed correctly.
+
+  #+BEGIN_SRC sh
+    poetry run pytest --verbose
+  #+END_SRC
+
+  Finally, invoke the [[https://poetry.eustace.io/docs/cli/#run][run]] command in the project folder as shown below to execute this application
+  without installing it.
+
+  #+BEGIN_SRC sh
+    poetry run devorame --help
+  #+END_SRC
+
+* Code
+  :PROPERTIES:
+  :header-args: :noweb-sep ""
+  :END:
+
+** Module =devorame=
+
+   This module contains all the code this project. The main function is the [[http://click.palletsprojects.com/en/7.x/api/#click.Group][group]] function [[#group-function-devorame][devorame]].
+  
+   #+HEADER: :tangle ~/Projects/code/python/devorame/devorame/__init__.py 
+   #+HEADER: :shebang #!/usr/bin/env python
+   #+BEGIN_SRC python :noweb yes :mkdirp yes
+     # -*- coding: utf-8 -*-
+     __version__ = '0.1.0'
+
+     <<devorame:import>>
+
+     <<devorame:code>>
+
+     if __name__ == '__main__':
+         sys.exit(devorame.main(standalone_mode=False))
+   #+END_SRC
+
+*** Group function =devorame=
+    :PROPERTIES:
+    :CUSTOM_ID:  group-function-devorame
+    :END:
+
+    This [[http://click.palletsprojects.com/en/7.x/api/#click.Group][group]] function manages the common parameters.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python
+      @click.group()
+      @click.option('--verbose', '-v', count=True, help="Verbosity level")
+      @click.pass_context
+      def devorame(ctx, verbose):
+          FORMAT = '%(asctime)-15s %(name)s - [%(levelname)s] %(message)s'
+          logging.basicConfig(format=FORMAT)
+          logger_name, lvl = (lambda l: (None, logging.NOTSET) if l <= 0 else ('devorame', l))(
+              logging.WARN - 10 * verbose
+          )
+          logging.getLogger(logger_name).setLevel(lvl) 
+    #+END_SRC
+  
+    - CLI arguments are managed with [[http://click.pocoo.org/6/commands/][click]] library.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import click
+      #+END_SRC
+  
+    - Logging is managed with [[https://docs.python.org/2/library/logging.html][logging]] library.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import logging
+      #+END_SRC
+
+*** Function =ignore_sigint=
+
+    This function is needed to be able to capture the [[https://docs.python.org/2/library/exceptions.html#exceptions.KeyboardInterrupt][KeyboardInterrupt]] exception disabling it in
+    the Pool workers as explained in this [[https://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool][stackoverflow question]].
+
+    #+NAME: devorame:code
+    #+BEGIN_SRC python
+     def ignore_sigint():
+         signal.signal(signal.SIGINT, signal.SIG_IGN)
+    #+END_SRC
+
+    - The module signal must be imported.
+
+      #+NAME: devorame:code
+      #+BEGIN_SRC python
+        import signal    
+      #+END_SRC
+
+*** Call back function =terms_callback=
+
+    This is a [[http://click.palletsprojects.com/en/7.x/api/?highlight=callba%2520k#click.Command.callback][Click callback function]] to convert the input string in a list of terms (words).
+    It is used by the [[#command-function-tf-idf][tf-idf]] command.
+  
+    - *Input parameters*
+  
+      - ctx :: A Click [[http://click.palletsprojects.com/en/7.x/api/#click.Context][context]] (not used).
+  
+      - param :: The command line param name (not used).
+  
+      - value :: The command line para value.
+  
+    - *Returns*
+  
+      A list of terms.
+  
+    - *Testing*
+  
+      - All terms are separated by non [[https://docs.python.org/2/library/re.html#re.LOCALE][LOCALE]] alphanumeric characters.
+  
+        #+NAME: devorame:terms_callback:test
+        #+BEGIN_SRC python
+          >>> terms_callback(None, None, 'STUPID   Whi$%&te  Men.')
+          ['STUPID', 'Whi', 'te', 'Men']
+        #+END_SRC
+  
+      - Non [[https://docs.python.org/2/library/re.html#re.LOCALE][LOCALE]] alphanumeric characters are erased.
+  
+        >>> terms_callback(None, None, '!"·$%&/ ()=  \'\\ ¿?ÑÑ')
+  
+        #+NAME: devorame:terms_callback:test
+        #+BEGIN_SRC python
+          >>> terms_callback(None, None, '!"·$%&/ ()=  ')
+          []
+        #+END_SRC
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python :noweb yes
+      def terms_callback(ctx, param, value):
+          """
+          <<devorame:terms_callback:test>>
+          """
+          return re.findall('\w+', value, re.LOCALE)
+    #+END_SRC
+  
+    - Module [[https://docs.python.org/2/library/re.html][re]] is imported to split the string in terms.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import re
+      #+END_SRC
+
+*** Command function =palindrome=
+    :PROPERTIES:
+    :CUSTOM_ID: command-function-palindrome
+    :END:
+
+    This command will read a string written by the user and will check in that phrase is a
+    [[https://en.wikipedia.org/wiki/Palindrome][palindrome]]. It returns in the standard console a phrase indicating whether the input string is a
+    [[https://en.wikipedia.org/wiki/Palindrome][palindrome]].
+  
+    This command will only works properly if the input string only contains [[https://en.wikipedia.org/wiki/ASCII][ASCII]] characters. It
+    will get rid of punctuation characters and spaces with the [[#function-sanitize][sanitize]] function and it verifies the
+    result with the [[#function-is_palindrome][is_palindrome]] function.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python
+      @devorame.command(help="Check if a phrase (between quotation marks) is a palindrome.")
+      @click.argument('string', nargs=1)
+      @click.pass_context
+      def palindrome(ctx, string):
+          logger = logging.getLogger('devorame.palindrome')
+    
+          if is_palindrome(sanitize(string)):
+              print 'Great! That "%s" is a palindrome.' % string
+              sys.exit(0)
+          else:
+              print 'That "%s" is not a palindrome. Keep trying!' % string
+              sys.exit(1)
+    #+END_SRC
+  
+    - Module [[https://docs.python.org/2/library/sys.html][sys]] is imported to used its [[https://docs.python.org/2/library/sys.html#sys.exit][exit]] function.
+  
+      #+NAME: devorame:code
+      #+BEGIN_SRC python
+        import sys
+      #+END_SRC
+
+*** Command function =k-complementary=
+    :PROPERTIES:
+    :CUSTOM_ID: command-function-k-complementary
+    :END:
+
+    This command will read the =k= integer followed by a list of integers. It will print every pair
+    returned by the [[#function-get_k_complementary_pairs][get_k_completary_pairs]] function in a new line.
+
+    #+NAME: devorame:code
+    #+BEGIN_SRC python
+      @devorame.command(name='k-complementary', help="Return the k-complementary pairs of input integers")
+      @click.argument('k', type=int)
+      @click.argument('items', nargs=-1, type=int)
+      @click.pass_context
+      def k_complementary(ctx, k, items):
+          for complementaries in get_k_complementary_pairs(k, items):
+              print "%s,%s" % complementaries
+    #+END_SRC
+
+*** Command function =tf-idf=
+    :PROPERTIES:
+    :CUSTOM_ID:  command-function-tf-idf
+    :END:
+
+    This command gathers the parameters for the [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf][TF-IDF]] challenge. A [[https://en.wikipedia.org/wiki/Priority_queue#Using_a_priority_queue_to_sorthttps://docs.python.org/2/library/heapq.html][priority queue]] is used to
+    maintain an ordered ranking of documents by their [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf#Term_frequency_2][term frequencies]]. The [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf#Inverse_document_frequency_2][IDF]] part is computed
+    after new documents are added to the directory but it is not needed to maintain the ranking of
+    documents because it only depends on the terms.
+
+    The ranking is maintained ordered with the [[https://docs.python.org/2/library/bisect.html][bisect]] module. It's insertion cost is =O(n * log n)=
+    and it's traversal cost is =O(1)=. A better alternative would be to use a binary tree with an
+    insertion cost of =O(log n)= and traversal cost of =O(n)=.
+
+    #+NAME: devorame:code
+    #+BEGIN_SRC python
+      @devorame.command(name='tf-idf', help="TF/IDF directory agent")
+      @click.option('-d', '--directory', required=True, type=click.Path(exists=True, dir_okay=True))
+      @click.option('-n', '--n-top', required=True, type=int)
+      @click.option('-p', '--period', required=True, type=int)
+      @click.option('-t', '--terms', required=True, callback=terms_callback)
+      @click.pass_context
+      def tf_idf(ctx, directory, n_top, period, terms):
+          logger = logging.getLogger('devorame.tf_idf')
+
+          tfidf = TfIdf()
+          ranking = []
+          idf = None
+
+          try:
+              while True:
+                  new_documents_and_paths = (
+                      (filename, os.path.join(directory, filename))
+                      for filename in os.listdir(directory)
+                      if not tfidf.has_document(filename)
+                      if os.path.isfile(os.path.join(directory, filename))
+                  )
+
+                  for document in tfidf.add_async(new_documents_and_paths):
+                      logger.info('Document %s was processed', document)
+                      bisect.insort(ranking, (1 - tfidf.tf(document, terms), document))
+                      idf = None
+
+                  idf = tfidf.idf(terms) if idf is None else idf
+                  print "Top-%s best documents" % n_top
+                  for inv_score, document in ranking[:n_top]:
+                      print "%s %.5f" % (document, (1 - inv_score) * tfidf.idf(terms))
+                  print ""
+                  time.sleep(period)
+          except KeyboardInterrupt as e:
+              logger.info('Finishing TF-IDF server')
+    #+END_SRC
+
+    - The [[https://docs.python.org/2/library/bisect.html][bisect]] module is used to insert new documents in the sorted ranking list efficiently.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import bisect
+      #+END_SRC
+
+    - Function [[https://docs.python.org/2/library/os.html#os.walk][walk]] of module [[https://docs.python.org/2/library/os.html][os]] is used.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import os
+      #+END_SRC
+  
+    - Function [[https://docs.python.org/2/library/os.path.html#os.path.join][join]] of module [[https://docs.python.org/2/library/os.path.html][os.path]] is used.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import os.path
+      #+END_SRC
+  
+    - Function [[https://docs.python.org/2/library/time.html#time.sleep][sleep]] of module [[https://docs.python.org/2/library/time.html][time]] is used.
+  
+      #+NAME: devorame:import
+      #+BEGIN_SRC python :noweb-sep ""
+        import time
+      #+END_SRC
+
+*** Function =sanitize=
+    :PROPERTIES:
+    :CUSTOM_ID: function-sanitize
+    :END:
+
+    This function will [[https://en.wikipedia.org/wiki/Letter_case][lowercase]] the input string and remove any character that is not an [[https://en.wikipedia.org/wiki/ASCII][ASCII]]
+    letter or a digit.
+  
+    - *Input parameters*
+  
+      - string :: The string to be sanitize
+  
+    - *Returns*
+  
+      A sanitized string
+  
+    - *Tests*
+  
+      - A string empty remains empty
+  
+        #+NAME: devorame:sanitize:test
+        #+BEGIN_SRC python
+          >>> sanitize('')
+          ''
+        #+END_SRC
+  
+      - [[https://en.wikipedia.org/wiki/Letter_case][Upper case]] letters are put in lowercase.
+  
+        #+NAME: devorame:sanitize:test
+        #+BEGIN_SRC python
+          >>> sanitize("JOjojO")
+          'jojojo'
+        #+END_SRC
+  
+      - Any character that is not a letter or a digit is removed.
+  
+        #+NAME: devorame:sanitize:test
+        #+BEGIN_SRC python
+          >>> sanitize("What a f#$? ¢a (b) ulous day? 101")
+          'whatafabulousday101'
+        #+END_SRC
+
+    - *Complexity*
+  
+      This implementation traverses the string two successive times, so its complexity is =O(2*n)=
+      but constant factor can be ignored so, this is equivalent to =O(n)=.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python :noweb yes
+      def sanitize(string):
+          """
+          <<devorame:sanitize:test>>
+          """
+          return ''.join(
+              ch for ch in string.lower()
+              if 48 <= ord(ch) <= 57 or 97 <= ord(ch) <= 122
+          )
+    #+END_SRC
+  
+    - A faster solution would probably be to use a regex expression like the one below, but to make
+      the complexity analysis easier I will use the implementation above. It is also a better
+      solution from the user's point of view because it will allow current [[https://docs.python.org/2/library/re.html#re.LOCALE][LOCALE]] characters.
+  
+      #+BEGIN_SRC python
+        re.findall('\w+', string, re.LOCALE)
+      #+END_SRC
+
+*** Function =is_palindrome=
+    :PROPERTIES:
+    :CUSTOM_ID: function-is_palindrome
+    :END:
+
+    This predicate checks if a string is a [[https://en.wikipedia.org/wiki/Palindrome][palindrome]]. Basically, it uses two indexes to traverse
+    the string from beginning to end and vice versa, checking that each character matches.
+  
+    - *Input parameters*
+  
+      - string :: The input string to check.
+  
+    - *Returns*
+  
+      =True= is the string is a [[https://en.wikipedia.org/wiki/Palindrome][palindrome]]. =False=, otherwise.
+  
+    - *Tests*
+  
+      - The empty string is a [[https://en.wikipedia.org/wiki/Palindrome][palindrome]].
+  
+        #+NAME: devorame:is_palindrome:test
+        #+BEGIN_SRC python
+          >>> is_palindrome("")
+          True
+        #+END_SRC
+  
+      - A single character string is also a palindrome.
+  
+        #+NAME: devorame:is_palindrome:test
+        #+BEGIN_SRC python
+          >>> is_palindrome("x")
+          True
+        #+END_SRC
+  
+      - The function is case-sensitive, so the next input is not a palindrome.
+  
+        #+NAME: devorame:is_palindrome:test
+        #+BEGIN_SRC python
+          >>> is_palindrome("xX")
+          False
+        #+END_SRC
+  
+      - To be used with phrases, punctuation characters and spaces have to be removed. An example of
+        a palindrome phrase. The phrase /A man, a plan, a canal, Panama!/ will return =True= if it
+        is transformed as below.
+  
+        #+NAME: devorame:is_palindrome:test
+        #+BEGIN_SRC python
+          >>> is_palindrome("amanaplanacanalpanama")
+          True
+        #+END_SRC
+  
+      - You can use the [[#82EE6976-8B08-4D10-A4AD-BB62D8A01EA5][sanitize]] function to prepare a phrase.
+  
+        #+NAME: devorame:is_palindrome:test
+        #+BEGIN_SRC python
+          >>> is_palindrome(sanitize("Was it a car or a cat I saw?"))
+          True
+        #+END_SRC
+  
+    - *Complexity*
+  
+      In the worst case, that is, the string is a palindrome, the string is traversed completely so
+      its cost is =O(n)=. Because of a python string is [[https://stackoverflow.com/a/1838733][internally stored in a C array]], accessing to
+      each character by index is =O(1)=.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python :noweb yes
+      def is_palindrome(string):
+          """
+          <<devorame:is_palindrome:test>>
+          """
+          forward_idx = 0
+          backward_idx = len(string) - 1
+    
+          while (forward_idx < backward_idx):
+              if string[forward_idx] != string[backward_idx]:
+                  return False
+              forward_idx += 1
+              backward_idx -= 1
+          return True
+    #+END_SRC
+  
+*** Function =get_k_complementary_pairs=
+    :PROPERTIES:
+    :CUSTOM_ID: function-get_k_complementary_pairs
+    :END:
+
+    Get the /k-complementary/ pairs from a list. A pair (x, y) is /k-complementary/ if =x + y = k=.
+  
+    - *Input parameters*
+  
+      - k :: An int number that determine the pairs.
+  
+      - items :: A list of intergers to traverse.
+  
+    - *Returns*
+  
+      A generator of the unique pairs that are /k-complementary/.
+  
+    - *Tests*
+  
+      - This left item of the pair is less than or equal that the right item of that pair.
+  
+        #+NAME: devorame:get_k_complementary_pairs:test
+        #+BEGIN_SRC python
+          >>> list(get_k_complementary_pairs(3, [1, 2])) == list(get_k_complementary_pairs(3, [2, 1]))
+          True
+        #+END_SRC
+  
+      - The /6-complementary/ pairs for the natural numbers.
+  
+        #+NAME: devorame:get_k_complementary_pairs:test
+        #+BEGIN_SRC python
+          >>> list(get_k_complementary_pairs(6, [1, 2, 3, 4, 5]))
+          [(3, 3), (2, 4), (1, 5)]
+        #+END_SRC
+  
+      - But order of pairs depends on the order of items.
+  
+        #+NAME: devorame:get_k_complementary_pairs:test
+        #+BEGIN_SRC python
+          >>> list(get_k_complementary_pairs(6, [5, 1, 2, 3, 4]))
+          [(1, 5), (3, 3), (2, 4)]
+        #+END_SRC
+  
+    - *Complexity*
+  
+      The =items= list is traversed just once. Access and insert cost of a dictionary is =O(1)= so
+      the complexity of this function is =O(n)=.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python :noweb yes
+     def get_k_complementary_pairs(k, items):
+         """
+         <<devorame:get_k_complementary_pairs:test>>
+         """
+   
+         spotted = {}
+         for item in items:
+             if item in spotted: continue
+             spotted[item] = None
+             k_complementary = k - item
+             if k_complementary in spotted:
+                 yield min(k_complementary, item), max(k_complementary, item)
+   #+END_SRC
+ 
+*** Function =collect_frequencies=
+
+     This function collects the term frequencies in a given file. This function is used in the
+     method [[#class-tfidf-method-add_async][add_async]] of the [[#class-tfidf][TfIdf]] class but because of [[https://stackoverflow.com/questions/21111106/cant-pickle-static-method-multiprocessing-python][some limitations of cPickle]] the input
+     function must be a function defined at module level.
+  
+     - *Input parameters*
+  
+       - *document_and_path* :: It's a tuple of a document and a path. A tuple is used because this
+            method is passed to the [[https://docs.python.org/2/library/multiprocessing.html#multiprocessing.pool.multiprocessing.Pool.imap_unordered][imap_unordered]] function and it only allows a function with one
+            argument. For Python 3.3 onwards there is [[https://docs.python.org/3.7/library/multiprocessing.html#multiprocessing.pool.Pool.starmap][starmap]] function.
+  
+     - *Returns*
+  
+       A dictionary with the terms frequencies in that document.
+  
+     - *Complexity*
+  
+       As it only needs one pass over input file to collect its frequencies, its complexity is
+       linear to the size of that input file, that is =O(n)=.
+  
+     #+NAME: devorame:code
+     #+BEGIN_SRC python
+       def collect_frequencies(document_and_path):
+           try:
+               logger = logging.getLogger('devorame.tf_idf')
+               document, path = document_and_path
+               logger.debug('Collecting frequencies of document %s at %s', document, path)
+    
+               frequencies = {}
+               with open(path, 'r') as file:
+                   for line in file:
+                       for term in re.findall('\w+', line.lower(), re.LOCALE):
+                           frequencies.update({term: frequencies.get(term, 0) + 1})
+    
+               logger.debug('Frequencies at %s: %s', document, frequencies)
+    
+               return document, frequencies
+           except KeyboardInterrupt:
+               return document, {}
+     #+END_SRC
+  
+     - Module [[https://docs.python.org/2/library/re.html][re]] must be imported to split the string in terms. A /term/ is a sequence of letters.
+       and digits leaving out, i.e., punctuation characters and the space character. It is aware of
+       the user's language.
+
+*** Class =TfIdf=
+    :PROPERTIES:
+    :CUSTOM_ID:  class-tfidf
+    :END:
+
+    An instance of this class gathers [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf][TF-IDF]] statistics of the added documents.
+  
+    #+NAME: devorame:code
+    #+BEGIN_SRC python :noweb yes
+      class TfIdf(object):
+          <<devorame:TfIdf:method>>
+    #+END_SRC
+
+**** Constructor
+
+     The instance constructor.
+   
+     - *Attributes*
+   
+       - documents :: It is dictionary where every key is the name of a document and every value is
+         the number of terms in that document.
+   
+       - terms :: It is a dictionary where every key is a term and every value is a dictionary that
+         gathers the frequency of that term in a given document.
+   
+         For instance, the /terms/ dictionary below shows that the term =song= appears 10
+         times in /document-A/ and 7 times in /document-B/
+   
+         #+BEGIN_SRC python
+           { 'song': { 'document-A': 10, 'document-B': 7} }
+         #+END_SRC
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def __init__(self):
+           self.documents = {}
+           self.terms = {}
+     #+END_SRC
+
+**** Method =add=
+
+     This method adds document to the [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf][TF-IDF]] rank. The document must be readable.
+   
+     - *Input Parameters*
+   
+       - *document* :: A string that stands for the name of the document.
+       - *path* :: A string that stands for the path of the document.
+   
+     - *Complexity*
+   
+       This algorighm is =O(l * t)= where =l= is the number of lines and =t= is the number of terms.
+       That =l * t= is lower that =n= so, complexity is also =O(n)=, being =n= the number of
+       characters in that document.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def add(self, document, path):
+           logger = logging.getLogger('devorame.tf_idf')
+     
+           logger.debug('Adding %s at %s', document, path)
+           _, frequencies = collect_frequencies((document, path))     
+           logger.debug('%s frequencies: %s', document, frequencies)
+     
+           for term, frequency in frequencies.iteritems():
+               self._update_term_frequency(term, document, frequency)
+     #+END_SRC
+
+**** Method =add_async=
+     :PROPERTIES:
+     :CUSTOM_ID: class-tfidf-method-add_async
+     :END:
+
+     This method process all pending documents in parallel. 
+
+     - *Input parameters*
+
+       - documents_and_paths :: it is a stream of pairs. Each pair consists of a document name and
+            the path to that document.
+
+     - *Returns*
+
+       A stream of documents in the order it was processed.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def add_async(self, documents_and_paths):
+           logger = logging.getLogger('devorame.tf_idf')
+
+           logger.debug('Processing a stream of input documents')
+
+           pool = Pool(None, ignore_sigint)
+           try:
+               documents_and_frequencies = pool.imap_unordered(
+                   collect_frequencies, documents_and_paths
+               )
+
+               logger.debug('Gathering document frequencies')
+               for document, frequencies in documents_and_frequencies:
+                   for term, frequency in frequencies.iteritems():
+                       self._update_term_frequency(term, document, frequency)
+                   yield document
+           except KeyboardInterrupt:
+               logger.info("TF-IDF loop finished")
+               pool.terminate()
+               pool.join()
+           except Exception:
+               logger.info("TF-IDF loop finished")
+               pool.terminate()
+               pool.join()
+               return
+     #+END_SRC
+
+     - The [[https://docs.python.org/2/library/multiprocessing.html#module-multiprocessing.pool][Pool]] class of the [[https://docs.python.org/2/library/multiprocessing.html][multiprocessing]] module is used
+
+       #+NAME: devorame:import
+       #+BEGIN_SRC python
+         from multiprocessing import Pool
+       #+END_SRC
+
+       Since this process is IO intensive it would be interesting to use the [[https://docs.python.org/2/library/multiprocessing.html#module-multiprocessing.dummy][multiprocessing.dummy]]
+       module (threading based) to compare the multiprocessing vs the multithreading versions.
+
+**** Method =tf=
+
+     This method calculates the [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf#Term_frequency_2][term frequency]] of a list of terms in a document.
+   
+     - *Input parameters*
+   
+       - document :: the document where to look for that [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf#Term_frequency_2][term frequency]].
+       - terms :: a list of term.
+   
+     - *Returns*
+   
+       The average of the sum of the frequencies of all terms.
+   
+     - *Complexity*
+   
+       Access to the =terms= dictionary is =O(1)= so complexity is =O(n)= where =n= is the lenght of
+       =terms= parameters.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def tf(self, document, terms):
+           if not terms: return 0.0
+
+           terms_in_document = float(self.documents.get(document, 0))
+           if not terms_in_document: return 0.0
+
+           result = sum(
+               self.terms.get(term, {}).get(document, 0)
+               for term in terms
+           ) / terms_in_document
+
+           return result
+     #+END_SRC
+
+**** Method =idf=
+
+     This method calculates the [[https://en.wikipedia.org/wiki/Tf%25E2%2580%2593idf#Inverse_document_frequency_2][inverse document frequency]] of a list of terms over the analyzed documents.
+   
+     - *Input parameters*
+   
+       - terms :: a list of term.
+   
+     - *Returns*
+   
+       The average of the sum of the inverse document frequencies of all terms.
+   
+     - *Completixy*
+   
+       Access to the =terms= dictionary is =O(1)= so complexity is =O(n)= where =n= is the lenght of
+       =terms= parameters.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def idf(self, terms):
+           n_documents = float(len(self.documents))
+           if not n_documents: return 0.0
+           if not terms: return 0.0
+
+           logger = logging.getLogger('devorame.tfidf')
+           def _idf(term):
+               n_term = len(self.terms.get(term, {}))
+               result = math.log(n_documents / n_term)
+               logger.debug('log(%s/%s)= %s', n_documents, n_term, result)
+               return result
+
+           return sum(_idf(term) for term in terms) / len(terms)
+     #+END_SRC
+   
+     - Function [[https://docs.python.org/2/library/math.html#math.log][log]] of module [[https://docs.python.org/2/library/math.html][math]] is used.
+   
+       #+NAME: devorame:import
+       #+BEGIN_SRC python :noweb-sep ""
+         import math
+       #+END_SRC
+
+**** Method =has_document=
+
+     This method returns =True= if the document passed by parameter has been processed.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def has_document(self, document):
+           return document in self.documents
+     #+END_SRC
+
+**** Method =_update_term_frequency=
+
+     This function updates the term frequency and the document frequency. 
+   
+     - *Input parameters*
+   
+       - term :: the term at which to update the frequency.
+       - document :: The document where the term was found.
+       - frequency :: The number of times the term appears in the document.
+   
+     - *Returns*
+   
+       Nothing is returned. The internal =terms= and =documents= dictionaries are updated.
+   
+     - *Complexity*
+   
+       Reading and writing a dictionary is =O(1)= so this function is also =O(1)=.
+   
+     #+NAME: devorame:TfIdf:method
+     #+BEGIN_SRC python
+       def _update_term_frequency(self, term, document, frequency):
+           self.terms.update({
+               term: dict( self.terms.get(term, {}),
+                           ,**{ document: self.terms.get(
+                               term, {}).get(
+                                   document, 0) + frequency})})
+           self.documents.update({
+               document: self.documents.get(document, 0) + frequency })
+     #+END_SRC
+
